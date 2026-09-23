@@ -1,0 +1,236 @@
+openapi: 3.0.3
+
+info:
+  title: Security Policies API
+  version: 1.0.0
+  description: >-
+    Cvicne REST API pro praci s bezpecnostnimi politikami.
+    Dokumentace ukazuje GET, POST, PATCH a DELETE vcetne pozitivnich
+    a negativnich response.
+
+servers:
+  - url: http://127.0.0.1:5000/api
+    description: Lokalni vyvojovy server
+
+tags:
+  - name: System
+    description: Kontrola dostupnosti API
+  - name: Policies
+    description: Sprava bezpecnostnich politik
+
+paths:
+  /health:
+    get:
+      tags:
+        - System
+      summary: Kontrola dostupnosti API
+      operationId: getHealth
+      responses:
+        "200":
+          description: API je dostupne
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+
+  /policies:
+    get:
+      tags:
+        - Policies
+      summary: Vrati seznam vsech politik
+      operationId: listPolicies
+      responses:
+        "200":
+          description: Seznam politik
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Policy"
+
+    post:
+      tags:
+        - Policies
+      summary: Vytvori novou politiku
+      operationId: createPolicy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePolicy"
+            example:
+              name: Block USB copy
+              action: block
+              enabled: true
+      responses:
+        "201":
+          description: Politika byla vytvorena
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "400":
+          description: Chybi JSON body nebo povinne pole name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /policies/{policy_id}:
+    parameters:
+      - name: policy_id
+        in: path
+        required: true
+        description: ID politiky
+        schema:
+          type: integer
+          minimum: 1
+
+    get:
+      tags:
+        - Policies
+      summary: Vrati jednu politiku podle ID
+      operationId: getPolicy
+      responses:
+        "200":
+          description: Nalezena politika
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "404":
+          description: Politika neexistuje
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    patch:
+      tags:
+        - Policies
+      summary: Upravi vybrana pole politiky
+      operationId: updatePolicy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePolicy"
+            example:
+              enabled: false
+      responses:
+        "200":
+          description: Politika byla upravena
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "400":
+          description: Chybi JSON body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Politika neexistuje
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      tags:
+        - Policies
+      summary: Smaze politiku
+      operationId: deletePolicy
+      responses:
+        "204":
+          description: Politika byla smazana; response nema body
+        "404":
+          description: Politika neexistuje
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: ok
+
+    Policy:
+      type: object
+      required:
+        - id
+        - name
+        - action
+        - enabled
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Block USB copy
+        action:
+          type: string
+          enum:
+            - audit
+            - block
+          example: block
+        enabled:
+          type: boolean
+          example: true
+
+    CreatePolicy:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          example: Block USB copy
+        action:
+          type: string
+          enum:
+            - audit
+            - block
+          default: audit
+        enabled:
+          type: boolean
+          default: true
+
+    UpdatePolicy:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+        action:
+          type: string
+          enum:
+            - audit
+            - block
+        enabled:
+          type: boolean
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: Policy not found
