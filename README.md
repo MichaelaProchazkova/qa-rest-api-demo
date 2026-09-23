@@ -1,15 +1,38 @@
-# REST API trénink před pohovorem
+# QA REST API Demo
 
-Malý projekt ukazuje dvě strany REST API:
+A small Python project created to practice REST API testing and basic test automation.
 
-- `app.py` je jednoduchý backend ve Flasku;
-- `client.py` posílá HTTP požadavky a ověřuje odpovědi.
+The project contains two main parts:
 
-Téma politik připomíná Safeticu, ale jde pouze o cvičnou aplikaci. Data jsou uložena jen v paměti a po restartu serveru zmizí.
+- `app.py` - a simple REST API backend built with Flask
+- `client.py` - an automated API client that sends HTTP requests and validates responses
 
-## 1. Příprava prostředí na Macu nebo Linuxu
+The API works with simple security policy data. All data is stored only in memory and is deleted when the server is restarted.
 
-V Terminálu přejdi do složky projektu a spusť:
+## Technologies
+
+- Python
+- Flask
+- Requests
+- Swagger / OpenAPI
+- Flasgger
+- JSON
+- HTTP / REST API
+
+## Project structure
+
+```text
+qa-rest-api-demo/
+├── app.py
+├── client.py
+├── openapi.yaml
+├── requirements.txt
+└── README.md
+```
+
+## 1. Setup
+
+Create and activate a virtual environment:
 
 ```bash
 python3 -m venv .venv
@@ -17,66 +40,72 @@ source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-Aktivní virtuální prostředí poznáš podle `(.venv)` na začátku řádku.
+When the virtual environment is active, `(.venv)` is displayed at the beginning of the terminal line.
 
-## 2. Spuštění REST backendu
+## 2. Start the REST API
 
-V prvním okně Terminálu spusť:
+Run the backend:
 
 ```bash
 python3 app.py
 ```
 
-Server poběží na adrese:
+The API will run at:
 
 ```text
 http://127.0.0.1:5000
 ```
 
-Toto okno nech běžet. Uvidíš v něm log každého přijatého requestu.
+Keep this terminal running while testing the API.
 
-## 3. Otevření Swagger UI
+## 3. Swagger UI
 
-Kdyz backend bezi, otevri v prohlizeci:
+When the backend is running, Swagger UI is available at:
 
 ```text
 http://127.0.0.1:5000/apidocs/
 ```
 
-Swagger UI nacita popis z `openapi.yaml`. Rozbal endpoint, klikni na
-`Try it out`, dopln vstupy a potom klikni na `Execute`. Uvidis presnou URL,
-odeslany request, status code, response headers a response body.
+The Swagger documentation is based on `openapi.yaml`.
 
-Zkus nejdrive:
+It can be used to manually explore the endpoints, send requests and inspect:
 
-1. `GET /health`;
-2. `POST /policies` s pripravenym JSON prikladem;
-3. zkopiruj vracene `id`;
-4. pouzij ho v `GET /policies/{policy_id}`;
-5. vyzkousej neexistujici ID a sleduj status `404`.
+- request URL
+- request body
+- HTTP status code
+- response headers
+- response body
 
-## 4. Odeslání requestů a jejich ověření
+Example flow:
 
-Otevři druhé okno Terminálu, přejdi do stejné složky a spusť:
+1. `GET /api/health`
+2. `POST /api/policies`
+3. Copy the returned policy `id`
+4. Use the ID in `GET /api/policies/{policy_id}`
+5. Try a non-existing ID and verify the `404` response
+
+## 4. Automated API scenario
+
+Open another terminal, activate the virtual environment and run:
 
 ```bash
 source .venv/bin/activate
 python3 client.py
 ```
 
-Klient postupně provede:
+The client executes the following scenario:
 
-1. `GET /api/health` – ověří dostupnost API;
-2. `POST /api/policies` – vytvoří politiku;
-3. `GET /api/policies/{id}` – načte vytvořenou politiku;
-4. negativní `POST` bez povinného názvu – očekává `400`;
-5. `PATCH /api/policies/{id}` – politiku vypne;
-6. `DELETE /api/policies/{id}` – politiku smaže;
-7. opakovaný `GET` – očekává `404`.
+1. `GET /api/health` - verifies that the API is available
+2. `POST /api/policies` - creates a new policy
+3. `GET /api/policies/{id}` - retrieves the created policy
+4. Negative `POST` request without the required `name` field - expects HTTP `400`
+5. `PATCH /api/policies/{id}` - updates the policy
+6. `DELETE /api/policies/{id}` - deletes the policy
+7. Another `GET` request - verifies that the deleted resource returns HTTP `404`
 
-## Co se děje v klientovi
+## API test example
 
-Request:
+Sending a request:
 
 ```python
 response = requests.post(
@@ -86,45 +115,81 @@ response = requests.post(
 )
 ```
 
-Ověření status kódu:
+Validating the HTTP status code:
 
 ```python
 assert response.status_code == 201
 ```
 
-Ověření hodnoty v JSON response:
+Validating data in the JSON response:
 
 ```python
 assert response.json()["action"] == "block"
 ```
 
-To je základ automatizovaného API testu: **pošlu request, získám response a pomocí assertů porovnám skutečný výsledek s očekáváním**.
+This demonstrates the basic principle of automated API testing:
 
-## Jak to popsat u pohovoru
+**send a request, receive a response and compare the actual result with the expected result.**
 
-> Připravila jsem si v Pythonu jednoduchý REST backend ve Flasku a klienta používajícího knihovnu requests. Klient posílá GET, POST, PATCH a DELETE požadavky. Ověřuji HTTP statusy i hodnoty v JSON response a mám tam také negativní scénář s chybějícím povinným polem. Prakticky jsem si tak prošla celý CRUD scénář a princip automatizované kontroly pomocí assertů.
+## What this project demonstrates
 
-`CRUD` znamená Create, Read, Update, Delete.
+The project covers:
 
-## Souvislost se Swaggerem
+- REST API basics
+- CRUD operations
+- GET, POST, PATCH and DELETE requests
+- HTTP status code validation
+- JSON response validation
+- Positive and negative testing
+- Required field validation
+- Swagger / OpenAPI documentation
+- Basic API test automation using Python assertions
 
-Swagger UI by nad stejným backendem zobrazoval dokumentaci endpointů a umožnil je ručně vyzkoušet. Tento projekt Swagger zatím nepotřebuje: endpointy volá klient přímo přes knihovnu `requests`. Postman by posílal stejné HTTP požadavky přes grafické rozhraní.
+CRUD stands for Create, Read, Update and Delete.
 
-## Nejčastější problémy
+## AI-assisted development
 
-### `ModuleNotFoundError`
+I used AI as a learning and debugging assistant while building this project.
 
-Virtuální prostředí není aktivní nebo nejsou nainstalované závislosti:
+It helped me understand some Flask and Python concepts, analyse errors and improve the API test flow. I reviewed and tested the generated suggestions and used the project to better understand how the individual parts work together.
+
+## Why I built this project
+
+I created this project as a practical exercise to improve my Python and API testing skills.
+
+My goal was not only to send API requests, but to understand the full flow between the client and backend, validate expected responses, test negative scenarios and investigate unexpected behaviour.
+
+I am currently continuing to develop my Python skills and gradually moving towards test automation.
+
+## Troubleshooting
+
+### ModuleNotFoundError
+
+The virtual environment may not be active or the dependencies may not be installed:
 
 ```bash
 source .venv/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-### `Connection refused`
+### Connection refused
 
-Backend `app.py` neběží. Spusť ho v prvním okně Terminálu.
+The Flask backend is probably not running.
 
-### Port 5000 je obsazený
+Start it with:
 
-Na některých Macích ho může používat AirPlay Receiver. V `app.py` změň `port=5000` například na `port=5050` a stejnou změnu udělej v `BASE_URL` v souboru `client.py`.
+```bash
+python3 app.py
+```
+
+### Port 5000 is already in use
+
+On macOS, port 5000 may be used by AirPlay Receiver.
+
+Change the port in `app.py`, for example to:
+
+```text
+5050
+```
+
+and update the `BASE_URL` in `client.py` accordingly.
